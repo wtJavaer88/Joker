@@ -84,10 +84,6 @@ public class ViewJokeFragment extends Fragment
             getJokeAndFill();
         }
 
-        if (this.curJoke != null)
-        {
-            otherBtsViewCtrl(true);
-        }
         super.onActivityCreated(savedInstanceState);
     }
 
@@ -239,14 +235,20 @@ public class ViewJokeFragment extends Fragment
             if (msg.what == 1)
             {
                 Joke tmp = (Joke) msg.obj;
+
+                curJoke = tmp;
+                otherBtsViewCtrl(curJoke != null);
+
                 if (tmp != null)
                 {
-                    curJoke = tmp;
                     try
                     {
                         Log.i("viewJoke_Bean",
                                 BeanToStringUtil.getBeanString(tmp).replace(
                                         "\n", ""));
+                        fillJokeText(curJoke);
+                        preBtViewCtrl();
+                        nextBtViewCtrl();
                     }
                     catch (Exception e)
                     {
@@ -254,9 +256,6 @@ public class ViewJokeFragment extends Fragment
                                 "getBeanString()  Error" + e.getMessage());
                         e.printStackTrace();
                     }
-                    fillJokeText(curJoke);
-                    preBtViewCtrl();
-                    nextBtViewCtrl();
                 }
                 else
                 {

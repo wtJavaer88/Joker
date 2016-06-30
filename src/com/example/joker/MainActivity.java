@@ -47,12 +47,10 @@ public class MainActivity extends FragmentActivity
         // ½ûÖ¹ºáÆÁ
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
-        System.out.println("AAA");
         SysInit.init(this);
         JokeDao.initDb(this);
         Intent logService = new Intent(this, LogService.class);
         startService(logService);
-        System.out.println("BBB");
 
         initMap();
         initFragments();
