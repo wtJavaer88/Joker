@@ -119,7 +119,7 @@ public class ViewJokeFragment extends Fragment
         {
             this.likeBt.setText("取消收藏");
         }
-        otherBtsViewCtrl(false);
+        // otherBtsViewCtrl(false);
     }
 
     public enum ViewJokeType
