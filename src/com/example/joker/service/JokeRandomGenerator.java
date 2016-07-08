@@ -10,15 +10,13 @@ public class JokeRandomGenerator
 {
     private int cursor = -1;
     private final String searchCondition;
-    public Map<Integer, Joke> jokes;
-    public Map<Integer, Integer> idCursors;
+    public Map<Integer, Integer> cursorIds;
     public int total = 0;
     public boolean initTotal = false;
 
     public JokeRandomGenerator(String searchCondition)
     {
-        this.jokes = new HashMap<Integer, Joke>();
-        this.idCursors = new HashMap<Integer, Integer>();
+        this.cursorIds = new HashMap<Integer, Integer>();
         this.searchCondition = searchCondition;
     }
 
@@ -28,53 +26,6 @@ public class JokeRandomGenerator
         initTotal = true;
     }
 
-    /**
-     * 
-     * @return
-     */
-    public Joke getNextJoke()
-    {
-        Joke joke = null;
-        this.cursor++;
-        if (hasContent() && jokes.containsKey(cursor))
-        {
-            joke = jokes.get(cursor);
-            jokes.put(cursor, joke);
-            return joke;
-        }
-
-        int id = (int) (Math.random() * total);
-        if (idCursors.containsKey(id))
-        {
-            joke = jokes.get(idCursors.get(id));
-            jokes.put(cursor, joke);
-            return joke;
-        }
-        try
-        {
-            // System.out.println("数据库操作.......");
-            joke = JokeDao.getCurJokeByType(id, this.searchCondition);
-            jokes.put(cursor, joke);
-            idCursors.put(id, cursor);
-        }
-        catch (RuntimeException ex)
-        {
-            throw ex;
-        }
-
-        return joke;
-    }
-
-    private boolean hasContent()
-    {
-        return jokes.size() > 0 && jokes.size() > cursor;
-    }
-
-    private void rollbackCursor()
-    {
-        this.cursor--;
-    }
-
     public Joke getPreJoke()
     {
         if (!checkPreable())
@@ -82,7 +33,68 @@ public class JokeRandomGenerator
             return null;
         }
         rollbackCursor();
-        return this.jokes.get(this.cursor);
+        return getCached();
+    }
+
+    public Joke getNextJoke()
+    {
+        Joke joke = null;
+        this.cursor++;
+        if (hasLocalData())
+        {
+            joke = getCached();
+        }
+        else
+        {
+            int id = (int) (Math.random() * total);
+            joke = CachedData.getJoke(id);
+            if (joke != null)
+            {
+                cursorIds.put(cursor, id);
+                return joke;
+            }
+            joke = computeNextFromDb(id);
+        }
+        return joke;
+    }
+
+    private Joke computeNextFromDb(int id)
+    {
+        Joke joke = null;
+        try
+        {
+            joke = JokeDao.getCurJokeByType(id, this.searchCondition);
+            CachedData.saveJoke(joke);
+            cursorIds.put(cursor, id);
+        }
+        catch (RuntimeException ex)
+        {
+            throw ex;
+        }
+        return joke;
+    }
+
+    private void rollbackCursor()
+    {
+        this.cursor--;
+    }
+
+    // 算出当前cursor所指的缓存
+    private Joke getCached()
+    {
+        Integer jokeId = cursorIds.get(cursor);
+        Joke joke = CachedData.getJoke(jokeId);
+        // 如果已经从缓存中删除, 则重新算
+        if (joke == null)
+        {
+            joke = computeNextFromDb(jokeId);
+        }
+        return joke;
+    }
+
+    private boolean hasLocalData()
+    {
+        return cursorIds.containsKey(cursor);
     }
 
     public boolean checkPreable()

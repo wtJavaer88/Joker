@@ -175,12 +175,10 @@ public class ViewJokeFragment extends Fragment
         if (this.jokeGenerator.checkNextable())
         {
             this.nextBt.setEnabled(Boolean.TRUE);
-            // this.nextBt.setVisibility(View.VISIBLE);
         }
         else
         {
             this.nextBt.setEnabled(Boolean.FALSE);
-            // this.nextBt.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -189,12 +187,10 @@ public class ViewJokeFragment extends Fragment
         if (this.jokeGenerator.checkPreable())
         {
             this.preBt.setEnabled(Boolean.TRUE);
-            // this.preBt.setVisibility(View.VISIBLE);
         }
         else
         {
             this.preBt.setEnabled(Boolean.FALSE);
-            // this.preBt.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -280,16 +276,22 @@ public class ViewJokeFragment extends Fragment
 
     public void nextJoke()
     {
-        // switchAnswer(true);
-        curType = ViewJokeType.NEXT;
-        getJokeAndFill();
+        if (this.jokeGenerator.checkNextable())
+        {
+            this.nextBt.setEnabled(Boolean.TRUE);
+            curType = ViewJokeType.NEXT;
+            getJokeAndFill();
+        }
     }
 
     public void preJoke()
     {
-        // switchAnswer(true);
-        curType = ViewJokeType.PRE;
-        getJokeAndFill();
+        if (this.jokeGenerator.checkPreable())
+        {
+            this.preBt.setEnabled(Boolean.TRUE);
+            curType = ViewJokeType.PRE;
+            getJokeAndFill();
+        }
     }
 
     public void modifyJoke()
