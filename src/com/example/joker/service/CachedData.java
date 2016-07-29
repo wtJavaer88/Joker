@@ -12,10 +12,7 @@ public class CachedData
     public synchronized static void saveJoke(Joke joke)
     {
         int id = joke.getId();
-        if (!map.containsKey(id))
-        {
-            map.put(id, joke);
-        }
+        map.put(id, joke);
     }
 
     public static Joke getJoke(Integer jokeId)

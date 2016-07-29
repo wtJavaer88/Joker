@@ -143,6 +143,7 @@ public class MainActivity extends FragmentActivity
     public boolean onKeyDown(int keyCode, KeyEvent event)
     {
         ViewJokeFragment fm = (ViewJokeFragment) ((TabPageIndicatorAdapter) adapter).currentFragment;
+
         switch (keyCode)
         {
         case KeyEvent.KEYCODE_BACK:
@@ -161,6 +162,7 @@ public class MainActivity extends FragmentActivity
             System.out.println("mute vol");
             return true;
         }
+
         return super.onKeyDown(keyCode, event);
     }
 

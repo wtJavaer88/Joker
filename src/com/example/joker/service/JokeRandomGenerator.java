@@ -39,7 +39,7 @@ public class JokeRandomGenerator
     public Joke getNextJoke()
     {
         Joke joke = null;
-        this.cursor++;
+        addCursor();
         if (hasLocalData())
         {
             joke = getCached();
@@ -65,7 +65,7 @@ public class JokeRandomGenerator
         {
             joke = JokeDao.getCurJokeByType(id, this.searchCondition);
             CachedData.saveJoke(joke);
-            cursorIds.put(cursor, id);
+            cursorIds.put(cursor, joke.getId());
         }
         catch (RuntimeException ex)
         {
@@ -74,7 +74,12 @@ public class JokeRandomGenerator
         return joke;
     }
 
-    private void rollbackCursor()
+    private synchronized void addCursor()
+    {
+        this.cursor++;
+    }
+
+    private synchronized void rollbackCursor()
     {
         this.cursor--;
     }

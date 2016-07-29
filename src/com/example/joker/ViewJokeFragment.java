@@ -1,5 +1,7 @@
 package com.example.joker;
 
+import java.lang.Thread.UncaughtExceptionHandler;
+
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -13,6 +15,8 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
@@ -21,11 +25,12 @@ import com.example.joker.bean.Joke;
 import com.example.joker.dao.JokeDao;
 import com.example.joker.service.JokeRandomGenerator;
 import com.example.joker.util.app.TextHelper;
+import com.example.joker.util.common.ClipBoardUtil;
 import com.example.joker.util.common.ToastUtil;
-import com.wnc.string.BeanToStringUtil;
 
 @SuppressLint("ValidFragment")
-public class ViewJokeFragment extends Fragment
+public class ViewJokeFragment extends Fragment implements
+        UncaughtExceptionHandler, OnClickListener, OnLongClickListener
 {
     TextView tvTit;
     TextView tvContent;
@@ -43,6 +48,8 @@ public class ViewJokeFragment extends Fragment
 
     String sqlCondition;
     public boolean hasExecute = false;
+
+    boolean isQuering = false;
 
     public ViewJokeFragment(String sqlCondition)
     {
@@ -83,7 +90,7 @@ public class ViewJokeFragment extends Fragment
             this.hasExecute = true;
             getJokeAndFill();
         }
-
+        Thread.setDefaultUncaughtExceptionHandler(this);
         super.onActivityCreated(savedInstanceState);
     }
 
@@ -108,12 +115,13 @@ public class ViewJokeFragment extends Fragment
         this.deleteBt = (Button) this.view.findViewById(R.id.deleteBt);
         this.likeBt = (Button) this.view.findViewById(R.id.likeBt);
 
-        this.tvContent.setOnClickListener(new MyOnClickListener());
-        this.nextBt.setOnClickListener(new MyOnClickListener());
-        this.preBt.setOnClickListener(new MyOnClickListener());
-        this.modifyBt.setOnClickListener(new MyOnClickListener());
-        this.deleteBt.setOnClickListener(new MyOnClickListener());
-        this.likeBt.setOnClickListener(new MyOnClickListener());
+        this.tvContent.setOnClickListener(this);
+        this.tvContent.setOnLongClickListener(this);
+        this.nextBt.setOnClickListener(this);
+        this.preBt.setOnClickListener(this);
+        this.modifyBt.setOnClickListener(this);
+        this.deleteBt.setOnClickListener(this);
+        this.likeBt.setOnClickListener(this);
 
         if (this.isEnjoyTab)
         {
@@ -135,6 +143,7 @@ public class ViewJokeFragment extends Fragment
         }
         catch (Exception ex)
         {
+            ex.printStackTrace();
             ToastUtil.showShortToast(getActivity(), ex.getMessage());
         }
 
@@ -196,31 +205,34 @@ public class ViewJokeFragment extends Fragment
 
     private void getJoke()
     {
-
-        new Thread(new Runnable()
+        if (!isQuering)
         {
-            Message msg = new Message();
-
-            @Override
-            public void run()
+            isQuering = true;
+            new Thread(new Runnable()
             {
-                if (!jokeGenerator.initTotal)
+                Message msg = new Message();
+
+                @Override
+                public void run()
                 {
-                    jokeGenerator.computeTotal();
+                    if (!jokeGenerator.initTotal)
+                    {
+                        jokeGenerator.computeTotal();
+                    }
+                    switch (curType)
+                    {
+                    case NEXT:
+                        msg.obj = jokeGenerator.getNextJoke();
+                        break;
+                    case PRE:
+                        msg.obj = jokeGenerator.getPreJoke();
+                        break;
+                    }
+                    msg.what = 1;
+                    handler.sendMessage(msg);
                 }
-                switch (curType)
-                {
-                case NEXT:
-                    msg.obj = jokeGenerator.getNextJoke();
-                    break;
-                case PRE:
-                    msg.obj = jokeGenerator.getPreJoke();
-                    break;
-                }
-                msg.what = 1;
-                handler.sendMessage(msg);
-            }
-        }).start();
+            }).start();
+        }
     }
 
     Handler handler = new Handler()
@@ -228,6 +240,7 @@ public class ViewJokeFragment extends Fragment
         @Override
         public void handleMessage(Message msg)
         {
+            isQuering = false;
             if (msg.what == 1)
             {
                 Joke tmp = (Joke) msg.obj;
@@ -239,9 +252,9 @@ public class ViewJokeFragment extends Fragment
                 {
                     try
                     {
-                        Log.i("viewJoke_Bean",
-                                BeanToStringUtil.getBeanString(tmp).replace(
-                                        "\n", ""));
+                        // Log.i("viewJoke_Bean",
+                        // BeanToStringUtil.getBeanString(tmp).replace(
+                        // "\n", ""));
                         fillJokeText(curJoke);
                         preBtViewCtrl();
                         nextBtViewCtrl();
@@ -271,6 +284,7 @@ public class ViewJokeFragment extends Fragment
                     }
                 }
             }
+
         };
     };
 
@@ -388,47 +402,54 @@ public class ViewJokeFragment extends Fragment
         this.tvContent.setVisibility(View.VISIBLE);
     }
 
-    class MyOnClickListener implements View.OnClickListener
+    @Override
+    public void uncaughtException(Thread thread, Throwable ex)
     {
-        @Override
-        public void onClick(View v)
+        Log.i("AAA", "uncaughtException   " + ex);
+        ex.getStackTrace();
+        for (StackTraceElement o : ex.getStackTrace())
         {
-            switch (v.getId())
-            {
-            case R.id.tvContent:
-                nextJoke();
-                break;
-            case R.id.nextBt:
-                nextJoke();
-                break;
-            case R.id.preBt:
-                preJoke();
-                break;
-            case R.id.modifyBt:
-                modifyJoke();
-                break;
-            case R.id.deleteBt:
-                deleteJoke();
-                break;
-            case R.id.likeBt:
-                likeJoke();
-                break;
-            default:
-                ToastUtil.showShortToast(ViewJokeFragment.this.getActivity(),
-                        "错误的点击事件!");
-
-            }
+            System.out.println(o.toString());
         }
     }
 
-    /***
-     * 答案的 显示/隐藏 控制
-     * 
-     * @param flag
-     */
-    public void switchAnswer(boolean flag)
+    @Override
+    public boolean onLongClick(View v)
     {
+        Log.i("log", "OK LongClick");
+        ClipBoardUtil.setNormalContent(getActivity(), ((TextView) v).getText()
+                .toString());
+        ToastUtil.showLongToast(getActivity(), "复制成功");
+        return false;
+    }
 
+    @Override
+    public void onClick(View v)
+    {
+        switch (v.getId())
+        {
+        case R.id.tvContent:
+            nextJoke();
+            break;
+        case R.id.nextBt:
+            nextJoke();
+            break;
+        case R.id.preBt:
+            preJoke();
+            break;
+        case R.id.modifyBt:
+            modifyJoke();
+            break;
+        case R.id.deleteBt:
+            deleteJoke();
+            break;
+        case R.id.likeBt:
+            likeJoke();
+            break;
+        default:
+            ToastUtil.showShortToast(ViewJokeFragment.this.getActivity(),
+                    "错误的点击事件!");
+        }
     }
 
 }
