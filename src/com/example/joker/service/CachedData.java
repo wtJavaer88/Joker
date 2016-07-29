@@ -7,17 +7,17 @@ import com.example.joker.bean.Joke;
 
 public class CachedData
 {
+    // 数据库中的位置与对应的Joke
     static Map<Integer, Joke> map = new HashMap<Integer, Joke>();
 
-    public synchronized static void saveJoke(Joke joke)
+    public synchronized static void saveJoke(int index, Joke joke)
     {
-        int id = joke.getId();
-        map.put(id, joke);
+        map.put(index, joke);
     }
 
-    public static Joke getJoke(Integer jokeId)
+    public static Joke getJoke(Integer index)
     {
-        return map.get(jokeId);
+        return map.get(index);
     }
 
     public static int getJokeCount()

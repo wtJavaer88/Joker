@@ -10,13 +10,13 @@ public class JokeRandomGenerator
 {
     private int cursor = -1;
     private final String searchCondition;
-    public Map<Integer, Integer> cursorIds;
+    public Map<Integer, Integer> cursorIndexs;// 游标对应数据库中的位置
     public int total = 0;
     public boolean initTotal = false;
 
     public JokeRandomGenerator(String searchCondition)
     {
-        this.cursorIds = new HashMap<Integer, Integer>();
+        this.cursorIndexs = new HashMap<Integer, Integer>();
         this.searchCondition = searchCondition;
     }
 
@@ -46,26 +46,26 @@ public class JokeRandomGenerator
         }
         else
         {
-            int id = (int) (Math.random() * total);
-            joke = CachedData.getJoke(id);
+            int index = (int) (Math.random() * total);
+            joke = CachedData.getJoke(index);
             if (joke != null)
             {
-                cursorIds.put(cursor, id);
+                cursorIndexs.put(cursor, index);
                 return joke;
             }
-            joke = computeNextFromDb(id);
+            joke = computeNextFromDb(index);
         }
         return joke;
     }
 
-    private Joke computeNextFromDb(int id)
+    private Joke computeNextFromDb(int index)
     {
         Joke joke = null;
         try
         {
-            joke = JokeDao.getCurJokeByType(id, this.searchCondition);
-            CachedData.saveJoke(joke);
-            cursorIds.put(cursor, joke.getId());
+            joke = JokeDao.getCurJokeByType(index, this.searchCondition);
+            CachedData.saveJoke(index, joke);
+            cursorIndexs.put(cursor, index);
         }
         catch (RuntimeException ex)
         {
@@ -87,19 +87,20 @@ public class JokeRandomGenerator
     // 算出当前cursor所指的缓存
     private Joke getCached()
     {
-        Integer jokeId = cursorIds.get(cursor);
-        Joke joke = CachedData.getJoke(jokeId);
+        System.out.println(CachedData.map);
+        Integer index = cursorIndexs.get(cursor);
+        Joke joke = CachedData.getJoke(index);
         // 如果已经从缓存中删除, 则重新算
         if (joke == null)
         {
-            joke = computeNextFromDb(jokeId);
+            joke = computeNextFromDb(index);
         }
         return joke;
     }
 
     private boolean hasLocalData()
     {
-        return cursorIds.containsKey(cursor);
+        return cursorIndexs.containsKey(cursor);
     }
 
     public boolean checkPreable()
